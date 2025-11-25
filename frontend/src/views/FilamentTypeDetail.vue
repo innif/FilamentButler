@@ -11,7 +11,13 @@
 
       <div class="type-info-card">
         <div class="type-header">
-          <div class="color-preview" :style="{ backgroundColor: filamentType.colorHex }"></div>
+          <div
+            class="color-preview"
+            :style="filamentType.color2
+              ? { background: `linear-gradient(135deg, ${filamentType.colorHex} 0%, ${filamentType.colorHex2} 100%)` }
+              : { backgroundColor: filamentType.colorHex }
+            "
+          ></div>
           <div>
             <h1>{{ filamentType.name }}</h1>
             <p class="manufacturer">{{ filamentType.manufacturer }}</p>
@@ -25,7 +31,7 @@
           </div>
           <div class="spec-item">
             <span class="label">Farbe</span>
-            <span class="value">{{ filamentType.color }}</span>
+            <span class="value">{{ filamentType.color2 ? `${filamentType.color} / ${filamentType.color2}` : filamentType.color }}</span>
           </div>
           <div class="spec-item">
             <span class="label">Durchmesser</span>

@@ -19,7 +19,13 @@
         @click="goToTypeDetail(type.id)"
       >
         <div class="type-header">
-          <div class="color-preview" :style="{ backgroundColor: type.colorHex }"></div>
+          <div
+            class="color-preview"
+            :style="type.color2
+              ? { background: `linear-gradient(135deg, ${type.colorHex} 0%, ${type.colorHex2} 100%)` }
+              : { backgroundColor: type.colorHex }
+            "
+          ></div>
           <div class="type-info">
             <h3>{{ type.name }}</h3>
             <p class="manufacturer">{{ type.manufacturer }}</p>
@@ -33,7 +39,7 @@
           </div>
           <div class="detail-item">
             <span class="label">Farbe:</span>
-            <span class="value">{{ type.color }}</span>
+            <span class="value">{{ type.color2 ? `${type.color} / ${type.color2}` : type.color }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Durchmesser:</span>
@@ -101,6 +107,18 @@
 
           <div class="form-row">
             <div class="form-group">
+              <label>2. Farbe (optional)</label>
+              <input v-model="formData.color2" type="text" placeholder="z.B. Blau">
+            </div>
+
+            <div class="form-group">
+              <label>2. Farbcode</label>
+              <input v-model="formData.colorHex2" type="color">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
               <label>Standard-Gewicht (g)</label>
               <input v-model.number="formData.standardWeight" type="number" placeholder="1000">
             </div>
@@ -158,6 +176,8 @@ export default {
       material: 'PLA',
       color: '',
       colorHex: '#000000',
+      color2: '',
+      colorHex2: '#000000',
       diameter: 1.75,
       standardWeight: null,
       standardPrice: null,
@@ -177,6 +197,8 @@ export default {
         material: 'PLA',
         color: '',
         colorHex: '#000000',
+        color2: '',
+        colorHex2: '#000000',
         diameter: 1.75,
         standardWeight: null,
         standardPrice: null,

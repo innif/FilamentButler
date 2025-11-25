@@ -19,7 +19,7 @@
         <select v-model.number="form.filamentTypeId" class="form-select" required @change="onFilamentTypeChange">
           <option :value="null" disabled>-- Bitte auswählen --</option>
           <option v-for="type in filamentTypes" :key="type.id" :value="type.id">
-            {{ type.manufacturer }} - {{ type.name }} ({{ type.material }}, {{ type.color }})
+            {{ type.manufacturer }} - {{ type.name }} ({{ type.material }}, {{ type.color2 ? `${type.color} / ${type.color2}` : type.color }})
           </option>
         </select>
         <p class="form-help">
@@ -31,10 +31,16 @@
       <div v-if="selectedType" class="selected-type-info">
         <h3>Ausgewählte Filament-Art:</h3>
         <div class="type-preview">
-          <div class="color-preview" :style="{ backgroundColor: selectedType.colorHex }"></div>
+          <div
+            class="color-preview"
+            :style="selectedType.color2
+              ? { background: `linear-gradient(135deg, ${selectedType.colorHex} 0%, ${selectedType.colorHex2} 100%)` }
+              : { backgroundColor: selectedType.colorHex }
+            "
+          ></div>
           <div class="type-details">
             <p><strong>{{ selectedType.manufacturer }} - {{ selectedType.name }}</strong></p>
-            <p>{{ selectedType.material }}, {{ selectedType.color }}, {{ selectedType.diameter }}mm</p>
+            <p>{{ selectedType.material }}, {{ selectedType.color2 ? `${selectedType.color} / ${selectedType.color2}` : selectedType.color }}, {{ selectedType.diameter }}mm</p>
             <p v-if="selectedType.printTemperature">
               Druck: {{ selectedType.printTemperature }}°C
               <span v-if="selectedType.bedTemperature">| Bett: {{ selectedType.bedTemperature }}°C</span>

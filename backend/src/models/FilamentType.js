@@ -34,6 +34,16 @@ module.exports = (sequelize) => {
       defaultValue: '#000000',
       comment: 'Farbcode in Hex-Format',
     },
+    color2: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Zweite Farbe des Filaments (für zweifarbige Filamente)',
+    },
+    colorHex2: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Farbcode der zweiten Farbe in Hex-Format',
+    },
     diameter: {
       type: DataTypes.FLOAT,
       allowNull: false,

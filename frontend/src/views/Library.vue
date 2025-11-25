@@ -63,14 +63,20 @@
         <div class="grid grid-cols-3">
           <div v-for="(typeData, typeId) in spoolsByFilamentTypeInMaterial(material)" :key="typeId" class="spool-card" @click="expandFilamentType(typeId)">
             <div class="spool-card-layout">
-              <div class="spool-color" :style="{ backgroundColor: typeData.filamentType?.colorHex || '#cccccc' }"></div>
+              <div
+                class="spool-color"
+                :style="typeData.filamentType?.color2
+                  ? { background: `linear-gradient(135deg, ${typeData.filamentType.colorHex} 0%, ${typeData.filamentType.colorHex2} 100%)` }
+                  : { backgroundColor: typeData.filamentType?.colorHex || '#cccccc' }
+                "
+              ></div>
 
               <div class="spool-content">
                 <div class="spool-header">
                   <div class="spool-info">
                     <h4 class="spool-name">{{ typeData.filamentType?.name || 'Unbekannt' }}</h4>
                     <p class="spool-manufacturer" v-if="typeData.filamentType?.manufacturer">{{ typeData.filamentType.manufacturer }}</p>
-                    <p class="spool-color-name">{{ typeData.filamentType?.color || '' }}</p>
+                    <p class="spool-color-name">{{ typeData.filamentType?.color2 ? `${typeData.filamentType.color} / ${typeData.filamentType.color2}` : typeData.filamentType?.color || '' }}</p>
                   </div>
                   <div class="spool-actions">
                     <button v-if="typeData.count > 1" @click.stop="toggleExpand(typeId)" class="btn-icon" :title="expandedTypes[typeId] ? 'Einklappen' : 'Ausklappen'">
