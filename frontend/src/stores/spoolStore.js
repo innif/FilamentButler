@@ -26,14 +26,18 @@ export const useSpoolStore = defineStore('spool', {
       state.spools.forEach(spool => {
         const typeId = spool.filamentTypeId
         if (!grouped[typeId]) {
+          const filamentType = spool.filamentType || spool.FilamentType
           grouped[typeId] = {
             count: 0,
             totalWeight: 0,
-            spools: []
+            totalInitialWeight: 0,
+            spools: [],
+            filamentType: filamentType
           }
         }
         grouped[typeId].count++
-        grouped[typeId].totalWeight += spool.remainingWeight
+        grouped[typeId].totalWeight += spool.remainingWeight || 0
+        grouped[typeId].totalInitialWeight += spool.weight || 0
         grouped[typeId].spools.push(spool)
       })
       return grouped

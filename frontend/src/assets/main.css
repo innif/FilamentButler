@@ -253,6 +253,7 @@ button {
 .grid {
   display: grid;
   gap: 16px;
+  align-items: start;
 }
 
 .grid-cols-2 {

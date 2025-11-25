@@ -52,33 +52,38 @@
     </div>
 
     <div v-else>
-      <div v-for="(data, material) in spoolStore.spoolsByMaterial" :key="material" class="material-section">
+      <div v-for="(_data, material) in spoolStore.spoolsByMaterial" :key="material" class="material-section">
         <div class="material-header">
           <h3>{{ material }}</h3>
           <span class="material-stats">
-            {{ data.count }} Spulen · {{ (data.totalWeight / 1000).toFixed(2) }} kg
+            {{ spoolsByFilamentTypeInMaterial(material).length }} Filament-Arten · {{ (materialTotalWeight(material) / 1000).toFixed(2) }} kg
           </span>
         </div>
 
         <div class="grid grid-cols-3">
-          <div v-for="spool in data.spools" :key="spool.id" class="spool-card">
+          <div v-for="(typeData, typeId) in spoolsByFilamentTypeInMaterial(material)" :key="typeId" class="spool-card" @click="expandFilamentType(typeId)">
             <div class="spool-card-layout">
-              <div class="spool-color" :style="{ backgroundColor: (spool.filamentType || spool.FilamentType)?.colorHex || '#cccccc' }"></div>
+              <div class="spool-color" :style="{ backgroundColor: typeData.filamentType?.colorHex || '#cccccc' }"></div>
 
               <div class="spool-content">
                 <div class="spool-header">
                   <div class="spool-info">
-                    <h4 class="spool-name">{{ (spool.filamentType || spool.FilamentType)?.name || 'Unbekannt' }}</h4>
-                    <p class="spool-manufacturer" v-if="(spool.filamentType || spool.FilamentType)?.manufacturer">{{ (spool.filamentType || spool.FilamentType).manufacturer }}</p>
-                    <p class="spool-color-name">{{ (spool.filamentType || spool.FilamentType)?.color || '' }}</p>
+                    <h4 class="spool-name">{{ typeData.filamentType?.name || 'Unbekannt' }}</h4>
+                    <p class="spool-manufacturer" v-if="typeData.filamentType?.manufacturer">{{ typeData.filamentType.manufacturer }}</p>
+                    <p class="spool-color-name">{{ typeData.filamentType?.color || '' }}</p>
                   </div>
                   <div class="spool-actions">
-                    <router-link :to="`/edit-spool/${spool.id}`" class="btn-icon" title="Bearbeiten">
-                      <span class="material-symbols-outlined">edit</span>
-                    </router-link>
-                    <button @click="confirmDelete(spool)" class="btn-icon btn-icon-danger" title="Löschen">
-                      <span class="material-symbols-outlined">delete</span>
+                    <button v-if="typeData.count > 1" @click.stop="toggleExpand(typeId)" class="btn-icon" :title="expandedTypes[typeId] ? 'Einklappen' : 'Ausklappen'">
+                      <span class="material-symbols-outlined">{{ expandedTypes[typeId] ? 'expand_less' : 'expand_more' }}</span>
                     </button>
+                    <template v-else>
+                      <router-link :to="`/edit-spool/${typeData.spools[0].id}`" class="btn-icon" title="Bearbeiten" @click.stop>
+                        <span class="material-symbols-outlined">edit</span>
+                      </router-link>
+                      <button @click.stop="confirmDelete(typeData.spools[0])" class="btn-icon btn-icon-danger" title="Löschen">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </template>
                   </div>
                 </div>
 
@@ -86,23 +91,63 @@
                   <div class="weight-bar-container">
                     <div
                       class="weight-bar"
-                      :style="{ width: (spool.remainingWeight / spool.weight * 100) + '%' }"
+                      :style="{ width: (typeData.totalWeight / typeData.totalInitialWeight * 100) + '%' }"
                     ></div>
                   </div>
                   <div class="weight-text">
-                    {{ spool.remainingWeight }}g / {{ spool.weight }}g
-                    ({{ ((spool.remainingWeight / spool.weight) * 100).toFixed(0) }}%)
+                    {{ typeData.totalWeight.toFixed(0) }}g / {{ typeData.totalInitialWeight.toFixed(0) }}g
+                    ({{ ((typeData.totalWeight / typeData.totalInitialWeight) * 100).toFixed(0) }}%)
                   </div>
                 </div>
 
                 <div class="spool-details">
-                  <span v-if="spool.location">
-                    <span class="material-symbols-outlined detail-icon">location_on</span>
-                    {{ spool.location }}
+                  <span v-if="typeData.count > 1">
+                    <span class="material-symbols-outlined detail-icon">inventory_2</span>
+                    {{ typeData.count }} Spule(n)
                   </span>
-                  <span v-if="spool.spoolNumber" class="spool-number">
-                    #{{ spool.spoolNumber }}
-                  </span>
+                  <template v-else>
+                    <span v-if="typeData.spools[0].location">
+                      <span class="material-symbols-outlined detail-icon">location_on</span>
+                      {{ typeData.spools[0].location }}
+                    </span>
+                    <span v-if="typeData.spools[0].spoolNumber" class="spool-number">
+                      #{{ typeData.spools[0].spoolNumber }}
+                    </span>
+                  </template>
+                </div>
+
+                <!-- Expandable section showing individual spools -->
+                <div v-if="typeData.count > 1 && expandedTypes[typeId]" class="expanded-spools">
+                  <div class="spools-divider"></div>
+                  <div v-for="spool in typeData.spools" :key="spool.id" class="individual-spool">
+                    <div class="individual-spool-header">
+                      <span v-if="spool.spoolNumber" class="spool-number-badge">#{{ spool.spoolNumber }}</span>
+                      <span v-else class="spool-number-badge">Spule</span>
+                      <div class="individual-spool-actions">
+                        <router-link :to="`/edit-spool/${spool.id}`" class="btn-icon-small" title="Bearbeiten" @click.stop>
+                          <span class="material-symbols-outlined">edit</span>
+                        </router-link>
+                        <button @click.stop="confirmDelete(spool)" class="btn-icon-small btn-icon-danger" title="Löschen">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="individual-spool-weight">
+                      <div class="weight-bar-container-small">
+                        <div
+                          class="weight-bar"
+                          :style="{ width: (spool.remainingWeight / spool.weight * 100) + '%' }"
+                        ></div>
+                      </div>
+                      <div class="weight-text-small">
+                        {{ spool.remainingWeight }}g / {{ spool.weight }}g ({{ ((spool.remainingWeight / spool.weight) * 100).toFixed(0) }}%)
+                      </div>
+                    </div>
+                    <div v-if="spool.location" class="individual-spool-location">
+                      <span class="material-symbols-outlined detail-icon-small">location_on</span>
+                      {{ spool.location }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -115,19 +160,45 @@
 
 <script>
 import { useSpoolStore } from '../stores/spoolStore'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 export default {
   name: 'Library',
   setup() {
     const spoolStore = useSpoolStore()
+    const expandedTypes = ref({})
 
     onMounted(() => {
       spoolStore.fetchSpools()
     })
 
+    const spoolsByFilamentTypeInMaterial = (material) => {
+      const filtered = {}
+      Object.entries(spoolStore.spoolsByFilamentType).forEach(([typeId, data]) => {
+        if (data.filamentType?.material === material) {
+          filtered[typeId] = data
+        }
+      })
+      return filtered
+    }
+
+    const materialTotalWeight = (material) => {
+      const types = spoolsByFilamentTypeInMaterial(material)
+      return Object.values(types).reduce((sum, typeData) => sum + typeData.totalWeight, 0)
+    }
+
+    const toggleExpand = (typeId) => {
+      expandedTypes.value[typeId] = !expandedTypes.value[typeId]
+    }
+
+    const expandFilamentType = () => {
+      // Optional: expand on card click
+    }
+
     const confirmDelete = async (spool) => {
-      if (confirm(`Möchtest du die Spule "${spool.name}" wirklich löschen?`)) {
+      const filamentType = spool.filamentType || spool.FilamentType
+      const name = filamentType?.name || 'diese Spule'
+      if (confirm(`Möchtest du die Spule "${name}" wirklich löschen?`)) {
         try {
           await spoolStore.deleteSpool(spool.id)
         } catch (error) {
@@ -138,6 +209,11 @@ export default {
 
     return {
       spoolStore,
+      expandedTypes,
+      spoolsByFilamentTypeInMaterial,
+      materialTotalWeight,
+      toggleExpand,
+      expandFilamentType,
       confirmDelete
     }
   }
@@ -321,10 +397,11 @@ export default {
   background: linear-gradient(135deg, var(--bg-secondary), var(--bg-elevated));
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  align-self: flex-start;
 }
 
 .spool-card::before {
@@ -358,6 +435,8 @@ export default {
 .spool-card-layout {
   display: flex;
   height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 .spool-color {
@@ -530,6 +609,140 @@ export default {
   font-size: 0.75rem;
   min-height: 2rem;
   flex: 1;
+}
+
+/* Expandable spools section */
+.expanded-spools {
+  margin-top: 1rem;
+  animation: slideDown 0.3s ease-out;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+}
+
+.spools-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-primary), transparent);
+  margin-bottom: 0.75rem;
+}
+
+.individual-spool {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+}
+
+.individual-spool:last-child {
+  margin-bottom: 0;
+}
+
+.individual-spool:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  transform: translateX(4px);
+}
+
+.individual-spool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.spool-number-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.individual-spool-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-icon-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-icon-small:hover {
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  transform: scale(1.1);
+}
+
+.btn-icon-small.btn-icon-danger:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.btn-icon-small .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.individual-spool-weight {
+  margin-bottom: 0.5rem;
+}
+
+.weight-bar-container-small {
+  height: 4px;
+  background-color: var(--bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.375rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.weight-text-small {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.individual-spool-location {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.detail-icon-small {
+  font-size: 0.875rem;
+  color: var(--accent-primary);
 }
 
 @media (max-width: 768px) {
