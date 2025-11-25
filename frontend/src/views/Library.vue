@@ -62,47 +62,48 @@
 
         <div class="grid grid-cols-3">
           <div v-for="spool in data.spools" :key="spool.id" class="spool-card">
-            <div class="spool-color" :style="{ backgroundColor: (spool.filamentType || spool.FilamentType)?.colorHex || '#cccccc' }"></div>
+            <div class="spool-card-layout">
+              <div class="spool-color" :style="{ backgroundColor: (spool.filamentType || spool.FilamentType)?.colorHex || '#cccccc' }"></div>
 
-            <div class="spool-content">
-              <h4 class="spool-name">{{ (spool.filamentType || spool.FilamentType)?.name || 'Unbekannt' }}</h4>
-              <p class="spool-manufacturer" v-if="(spool.filamentType || spool.FilamentType)?.manufacturer">{{ (spool.filamentType || spool.FilamentType).manufacturer }}</p>
-              <p class="spool-color-name">{{ (spool.filamentType || spool.FilamentType)?.color || '' }}</p>
-              <p class="spool-number" v-if="spool.spoolNumber">Spule: {{ spool.spoolNumber }}</p>
-
-              <div class="spool-weight">
-                <div class="weight-bar-container">
-                  <div
-                    class="weight-bar"
-                    :style="{ width: (spool.remainingWeight / spool.weight * 100) + '%' }"
-                  ></div>
+              <div class="spool-content">
+                <div class="spool-header">
+                  <div class="spool-info">
+                    <h4 class="spool-name">{{ (spool.filamentType || spool.FilamentType)?.name || 'Unbekannt' }}</h4>
+                    <p class="spool-manufacturer" v-if="(spool.filamentType || spool.FilamentType)?.manufacturer">{{ (spool.filamentType || spool.FilamentType).manufacturer }}</p>
+                    <p class="spool-color-name">{{ (spool.filamentType || spool.FilamentType)?.color || '' }}</p>
+                  </div>
+                  <div class="spool-actions">
+                    <router-link :to="`/edit-spool/${spool.id}`" class="btn-icon" title="Bearbeiten">
+                      <span class="material-symbols-outlined">edit</span>
+                    </router-link>
+                    <button @click="confirmDelete(spool)" class="btn-icon btn-icon-danger" title="Löschen">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
                 </div>
-                <div class="weight-text">
-                  {{ spool.remainingWeight }}g / {{ spool.weight }}g
-                  ({{ ((spool.remainingWeight / spool.weight) * 100).toFixed(0) }}%)
+
+                <div class="spool-weight">
+                  <div class="weight-bar-container">
+                    <div
+                      class="weight-bar"
+                      :style="{ width: (spool.remainingWeight / spool.weight * 100) + '%' }"
+                    ></div>
+                  </div>
+                  <div class="weight-text">
+                    {{ spool.remainingWeight }}g / {{ spool.weight }}g
+                    ({{ ((spool.remainingWeight / spool.weight) * 100).toFixed(0) }}%)
+                  </div>
                 </div>
-              </div>
 
-              <div class="spool-details">
-                <span v-if="(spool.filamentType || spool.FilamentType)?.diameter">
-                  <span class="material-symbols-outlined detail-icon">straighten</span>
-                  {{ (spool.filamentType || spool.FilamentType).diameter }}mm
-                </span>
-                <span v-if="spool.location">
-                  <span class="material-symbols-outlined detail-icon">location_on</span>
-                  {{ spool.location }}
-                </span>
-              </div>
-
-              <div class="spool-actions">
-                <router-link :to="`/edit-spool/${spool.id}`" class="btn btn-secondary btn-sm">
-                  <span class="material-symbols-outlined">edit</span>
-                  Bearbeiten
-                </router-link>
-                <button @click="confirmDelete(spool)" class="btn btn-danger btn-sm">
-                  <span class="material-symbols-outlined">delete</span>
-                  Löschen
-                </button>
+                <div class="spool-details">
+                  <span v-if="spool.location">
+                    <span class="material-symbols-outlined detail-icon">location_on</span>
+                    {{ spool.location }}
+                  </span>
+                  <span v-if="spool.spoolNumber" class="spool-number">
+                    #{{ spool.spoolNumber }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -341,6 +342,8 @@ export default {
   mask-composite: exclude;
   opacity: 0;
   transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .spool-card:hover {
@@ -352,19 +355,41 @@ export default {
   opacity: 1;
 }
 
+.spool-card-layout {
+  display: flex;
+  height: 100%;
+}
+
 .spool-color {
-  height: 5rem;
-  width: 100%;
+  width: 4rem;
+  min-width: 4rem;
   position: relative;
-  box-shadow: inset 0 -20px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .spool-content {
-  padding: 1.25rem;
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.spool-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.spool-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .spool-name {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   margin: 0 0 0.25rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -373,40 +398,38 @@ export default {
 
 .spool-manufacturer {
   color: var(--accent-primary);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.125rem;
 }
 
 .spool-color-name {
   color: var(--text-tertiary);
   font-weight: 500;
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.8125rem;
 }
 
 .spool-number {
   color: var(--text-muted);
   font-weight: 600;
-  margin: 0 0 1.25rem;
   font-size: 0.75rem;
   background: var(--bg-tertiary);
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
-  display: inline-block;
   border: 1px solid var(--border-primary);
 }
 
 .spool-weight {
-  margin-bottom: 1.25rem;
+  flex-shrink: 0;
 }
 
 .weight-bar-container {
-  height: 6px;
+  height: 5px;
   background-color: var(--bg-tertiary);
-  border-radius: 3px;
+  border-radius: 2.5px;
   overflow: hidden;
-  margin-bottom: 0.625rem;
+  margin-bottom: 0.5rem;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -436,11 +459,11 @@ export default {
 
 .spool-details {
   display: flex;
-  gap: 1rem;
+  gap: 0.625rem;
   font-size: 0.75rem;
   color: var(--text-tertiary);
-  margin-bottom: 1.25rem;
   font-weight: 600;
+  flex-wrap: wrap;
 }
 
 .spool-details span {
@@ -448,7 +471,7 @@ export default {
   align-items: center;
   gap: 0.375rem;
   background: var(--bg-tertiary);
-  padding: 0.375rem 0.75rem;
+  padding: 0.375rem 0.625rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-primary);
 }
@@ -460,7 +483,46 @@ export default {
 
 .spool-actions {
   display: flex;
-  gap: 0.625rem;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  z-index: 10;
+}
+
+.btn-icon:hover {
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon-danger:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.btn-icon .material-symbols-outlined {
+  font-size: 1.125rem;
 }
 
 .btn-sm {
