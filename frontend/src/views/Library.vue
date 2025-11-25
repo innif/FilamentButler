@@ -108,7 +108,15 @@
                     <p class="spool-manufacturer" v-if="item.typeData.filamentType?.manufacturer">{{ item.typeData.filamentType.manufacturer }}</p>
                     <p class="spool-color-name">{{ item.typeData.filamentType?.color2 ? `${item.typeData.filamentType.color} / ${item.typeData.filamentType.color2}` : item.typeData.filamentType?.color || '' }}</p>
                   </div>
-                  <div class="spool-weight-compact">
+
+                  <!-- Show spool count for multiple spools instead of weight bar -->
+                  <div v-if="item.typeData.count > 1" class="spool-count-display">
+                    <span class="material-symbols-outlined spool-count-icon">inventory_2</span>
+                    <span class="spool-count-text">{{ item.typeData.count }} Spulen</span>
+                  </div>
+
+                  <!-- Show weight bar only for single spools -->
+                  <div v-else class="spool-weight-compact">
                     <div class="weight-bar-container">
                       <div
                         class="weight-bar"
@@ -123,11 +131,7 @@
                 </div>
 
                 <div class="spool-details">
-                  <span v-if="item.typeData.count > 1">
-                    <span class="material-symbols-outlined detail-icon">inventory_2</span>
-                    {{ item.typeData.count }} Spule(n)
-                  </span>
-                  <template v-else>
+                  <template v-if="item.typeData.count === 1">
                     <span v-if="item.typeData.spools[0].location">
                       <span class="material-symbols-outlined detail-icon">location_on</span>
                       {{ item.typeData.spools[0].location }}
@@ -635,6 +639,31 @@ export default {
   flex-direction: column;
   gap: 0.375rem;
   margin-left: auto;
+}
+
+.spool-count-display {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  background: var(--bg-tertiary);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.spool-count-icon {
+  font-size: 1.5rem;
+  color: var(--accent-primary);
+}
+
+.spool-count-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .spool-info {
