@@ -72,12 +72,8 @@
               ></div>
 
               <div class="spool-content">
-                <div class="spool-header">
-                  <div class="spool-info">
-                    <h4 class="spool-name">{{ typeData.filamentType?.name || 'Unbekannt' }}</h4>
-                    <p class="spool-manufacturer" v-if="typeData.filamentType?.manufacturer">{{ typeData.filamentType.manufacturer }}</p>
-                    <p class="spool-color-name">{{ typeData.filamentType?.color2 ? `${typeData.filamentType.color} / ${typeData.filamentType.color2}` : typeData.filamentType?.color || '' }}</p>
-                  </div>
+                <div class="spool-title-row">
+                  <h4 class="spool-name">{{ typeData.filamentType?.name || 'Unbekannt' }}</h4>
                   <div class="spool-actions">
                     <button v-if="typeData.count > 1" @click.stop="toggleExpand(typeId)" class="btn-icon" :title="expandedTypes[typeId] ? 'Einklappen' : 'Ausklappen'">
                       <span class="material-symbols-outlined">{{ expandedTypes[typeId] ? 'expand_less' : 'expand_more' }}</span>
@@ -92,17 +88,22 @@
                     </template>
                   </div>
                 </div>
-
-                <div class="spool-weight">
-                  <div class="weight-bar-container">
-                    <div
-                      class="weight-bar"
-                      :style="{ width: (typeData.totalWeight / typeData.totalInitialWeight * 100) + '%' }"
-                    ></div>
+                <div class="spool-info-compact">
+                  <div class="spool-text-info">
+                    <p class="spool-manufacturer" v-if="typeData.filamentType?.manufacturer">{{ typeData.filamentType.manufacturer }}</p>
+                    <p class="spool-color-name">{{ typeData.filamentType?.color2 ? `${typeData.filamentType.color} / ${typeData.filamentType.color2}` : typeData.filamentType?.color || '' }}</p>
                   </div>
-                  <div class="weight-text">
-                    {{ typeData.totalWeight.toFixed(0) }}g / {{ typeData.totalInitialWeight.toFixed(0) }}g
-                    ({{ ((typeData.totalWeight / typeData.totalInitialWeight) * 100).toFixed(0) }}%)
+                  <div class="spool-weight-compact">
+                    <div class="weight-bar-container">
+                      <div
+                        class="weight-bar"
+                        :style="{ width: (typeData.totalWeight / typeData.totalInitialWeight * 100) + '%' }"
+                      ></div>
+                    </div>
+                    <div class="weight-text">
+                      {{ typeData.totalWeight.toFixed(0) }}g / {{ typeData.totalInitialWeight.toFixed(0) }}g
+                      ({{ ((typeData.totalWeight / typeData.totalInitialWeight) * 100).toFixed(0) }}%)
+                    </div>
                   </div>
                 </div>
 
@@ -457,7 +458,14 @@ export default {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
+}
+
+.spool-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .spool-header {
@@ -468,6 +476,30 @@ export default {
   gap: 0.5rem;
 }
 
+.spool-info-compact {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.spool-text-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.spool-weight-compact {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
 .spool-info {
   flex: 1;
   min-width: 0;
@@ -475,7 +507,7 @@ export default {
 
 .spool-name {
   font-size: 1.125rem;
-  margin: 0 0 0.25rem;
+  margin: 0;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
