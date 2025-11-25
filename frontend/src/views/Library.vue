@@ -2,10 +2,25 @@
   <div class="library">
     <div class="header-section">
       <h2>Bibliothek</h2>
-      <router-link to="/add-spool" class="btn btn-primary">
-        <span class="material-symbols-outlined">add</span>
-        Neue Spule
-      </router-link>
+      <div class="header-controls">
+        <div class="sort-control">
+          <label for="sort-select">
+            <span class="material-symbols-outlined">sort</span>
+            Sortieren:
+          </label>
+          <select id="sort-select" v-model="sortBy" class="sort-select">
+            <option value="type">Typ (Name)</option>
+            <option value="color">Farbe</option>
+            <option value="manufacturer">Hersteller</option>
+            <option value="count">Anzahl</option>
+            <option value="weight">Gewicht</option>
+          </select>
+        </div>
+        <router-link to="/add-spool" class="btn btn-primary">
+          <span class="material-symbols-outlined">add</span>
+          Neue Spule
+        </router-link>
+      </div>
     </div>
 
     <div class="stats-grid" v-if="!spoolStore.loading && spoolStore.spools.length > 0">
@@ -52,7 +67,7 @@
     </div>
 
     <div v-else>
-      <div v-for="(_data, material) in spoolStore.spoolsByMaterial" :key="material" class="material-section">
+      <div v-for="(_data, material) in spoolStore.spoolsByMaterial" :key="material + '-' + sortBy" class="material-section">
         <div class="material-header">
           <h3>{{ material }}</h3>
           <span class="material-stats">
@@ -61,28 +76,28 @@
         </div>
 
         <div class="grid grid-cols-3">
-          <div v-for="(typeData, typeId) in spoolsByFilamentTypeInMaterial(material)" :key="typeId" class="spool-card" @click="expandFilamentType(typeId)">
+          <div v-for="item in getSortedSpoolsArray(material)" :key="item.typeId + '-' + sortBy" class="spool-card" @click="expandFilamentType(item.typeId)">
             <div class="spool-card-layout">
               <div
                 class="spool-color"
-                :style="typeData.filamentType?.color2
-                  ? { background: `linear-gradient(135deg, ${typeData.filamentType.colorHex} 0%, ${typeData.filamentType.colorHex2} 100%)` }
-                  : { backgroundColor: typeData.filamentType?.colorHex || '#cccccc' }
+                :style="item.typeData.filamentType?.color2
+                  ? { background: `linear-gradient(135deg, ${item.typeData.filamentType.colorHex} 0%, ${item.typeData.filamentType.colorHex2} 100%)` }
+                  : { backgroundColor: item.typeData.filamentType?.colorHex || '#cccccc' }
                 "
               ></div>
 
               <div class="spool-content">
                 <div class="spool-title-row">
-                  <h4 class="spool-name">{{ typeData.filamentType?.name || 'Unbekannt' }}</h4>
+                  <h4 class="spool-name">{{ item.typeData.filamentType?.name || 'Unbekannt' }}</h4>
                   <div class="spool-actions">
-                    <button v-if="typeData.count > 1" @click.stop="toggleExpand(typeId)" class="btn-icon" :title="expandedTypes[typeId] ? 'Einklappen' : 'Ausklappen'">
-                      <span class="material-symbols-outlined">{{ expandedTypes[typeId] ? 'expand_less' : 'expand_more' }}</span>
+                    <button v-if="item.typeData.count > 1" @click.stop="toggleExpand(item.typeId)" class="btn-icon" :title="expandedTypes[item.typeId] ? 'Einklappen' : 'Ausklappen'">
+                      <span class="material-symbols-outlined">{{ expandedTypes[item.typeId] ? 'expand_less' : 'expand_more' }}</span>
                     </button>
                     <template v-else>
-                      <router-link :to="`/edit-spool/${typeData.spools[0].id}`" class="btn-icon" title="Bearbeiten" @click.stop>
+                      <router-link :to="`/edit-spool/${item.typeData.spools[0].id}`" class="btn-icon" title="Bearbeiten" @click.stop>
                         <span class="material-symbols-outlined">edit</span>
                       </router-link>
-                      <button @click.stop="confirmDelete(typeData.spools[0])" class="btn-icon btn-icon-danger" title="Löschen">
+                      <button @click.stop="confirmDelete(item.typeData.spools[0])" class="btn-icon btn-icon-danger" title="Löschen">
                         <span class="material-symbols-outlined">delete</span>
                       </button>
                     </template>
@@ -90,43 +105,43 @@
                 </div>
                 <div class="spool-info-compact">
                   <div class="spool-text-info">
-                    <p class="spool-manufacturer" v-if="typeData.filamentType?.manufacturer">{{ typeData.filamentType.manufacturer }}</p>
-                    <p class="spool-color-name">{{ typeData.filamentType?.color2 ? `${typeData.filamentType.color} / ${typeData.filamentType.color2}` : typeData.filamentType?.color || '' }}</p>
+                    <p class="spool-manufacturer" v-if="item.typeData.filamentType?.manufacturer">{{ item.typeData.filamentType.manufacturer }}</p>
+                    <p class="spool-color-name">{{ item.typeData.filamentType?.color2 ? `${item.typeData.filamentType.color} / ${item.typeData.filamentType.color2}` : item.typeData.filamentType?.color || '' }}</p>
                   </div>
                   <div class="spool-weight-compact">
                     <div class="weight-bar-container">
                       <div
                         class="weight-bar"
-                        :style="{ width: (typeData.totalWeight / typeData.totalInitialWeight * 100) + '%' }"
+                        :style="{ width: (item.typeData.totalWeight / item.typeData.totalInitialWeight * 100) + '%' }"
                       ></div>
                     </div>
                     <div class="weight-text">
-                      {{ typeData.totalWeight.toFixed(0) }}g / {{ typeData.totalInitialWeight.toFixed(0) }}g
-                      ({{ ((typeData.totalWeight / typeData.totalInitialWeight) * 100).toFixed(0) }}%)
+                      {{ item.typeData.totalWeight.toFixed(0) }}g / {{ item.typeData.totalInitialWeight.toFixed(0) }}g
+                      ({{ ((item.typeData.totalWeight / item.typeData.totalInitialWeight) * 100).toFixed(0) }}%)
                     </div>
                   </div>
                 </div>
 
                 <div class="spool-details">
-                  <span v-if="typeData.count > 1">
+                  <span v-if="item.typeData.count > 1">
                     <span class="material-symbols-outlined detail-icon">inventory_2</span>
-                    {{ typeData.count }} Spule(n)
+                    {{ item.typeData.count }} Spule(n)
                   </span>
                   <template v-else>
-                    <span v-if="typeData.spools[0].location">
+                    <span v-if="item.typeData.spools[0].location">
                       <span class="material-symbols-outlined detail-icon">location_on</span>
-                      {{ typeData.spools[0].location }}
+                      {{ item.typeData.spools[0].location }}
                     </span>
-                    <span v-if="typeData.spools[0].spoolNumber" class="spool-number">
-                      #{{ typeData.spools[0].spoolNumber }}
+                    <span v-if="item.typeData.spools[0].spoolNumber" class="spool-number">
+                      #{{ item.typeData.spools[0].spoolNumber }}
                     </span>
                   </template>
                 </div>
 
                 <!-- Expandable section showing individual spools -->
-                <div v-if="typeData.count > 1 && expandedTypes[typeId]" class="expanded-spools">
+                <div v-if="item.typeData.count > 1 && expandedTypes[item.typeId]" class="expanded-spools">
                   <div class="spools-divider"></div>
-                  <div v-for="spool in typeData.spools" :key="spool.id" class="individual-spool">
+                  <div v-for="spool in item.typeData.spools" :key="spool.id" class="individual-spool">
                     <div class="individual-spool-header">
                       <span v-if="spool.spoolNumber" class="spool-number-badge">#{{ spool.spoolNumber }}</span>
                       <span v-else class="spool-number-badge">Spule</span>
@@ -167,13 +182,14 @@
 
 <script>
 import { useSpoolStore } from '../stores/spoolStore'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
 export default {
   name: 'Library',
   setup() {
     const spoolStore = useSpoolStore()
     const expandedTypes = ref({})
+    const sortBy = ref('type')
 
     onMounted(() => {
       spoolStore.fetchSpools()
@@ -187,6 +203,69 @@ export default {
         }
       })
       return filtered
+    }
+
+    // Create a computed property that holds all sorted spools by material
+    const allSortedSpools = computed(() => {
+      console.log('Computing sorted spools with sortBy:', sortBy.value)
+      const result = {}
+
+      // Iterate through each material
+      Object.keys(spoolStore.spoolsByMaterial).forEach(material => {
+        const filtered = {}
+        Object.entries(spoolStore.spoolsByFilamentType).forEach(([typeId, data]) => {
+          if (data.filamentType?.material === material) {
+            filtered[typeId] = data
+          }
+        })
+
+        const entries = Object.entries(filtered)
+        console.log(`Sorting ${material} with ${entries.length} entries by ${sortBy.value}`)
+
+        // Create a copy and sort it to avoid mutating the original
+        const sorted = [...entries].sort(([, a], [, b]) => {
+          switch (sortBy.value) {
+            case 'type':
+              return (a.filamentType?.name || '').localeCompare(b.filamentType?.name || '')
+
+            case 'color':
+              return (a.filamentType?.color || '').localeCompare(b.filamentType?.color || '')
+
+            case 'manufacturer':
+              return (a.filamentType?.manufacturer || '').localeCompare(b.filamentType?.manufacturer || '')
+
+            case 'count':
+              return b.count - a.count // Descending order
+
+            case 'weight':
+              return b.totalWeight - a.totalWeight // Descending order
+
+            default:
+              return 0
+          }
+        })
+
+        // Store as array instead of object to preserve sort order
+        result[material] = sorted
+      })
+
+      return result
+    })
+
+    const sortedSpoolsByFilamentTypeInMaterial = (material) => {
+      const sorted = allSortedSpools.value[material] || []
+      // Convert array back to object for template
+      return Object.fromEntries(sorted)
+    }
+
+    // Return an array instead of object to ensure Vue sees the order change
+    const getSortedSpoolsArray = (material) => {
+      const sorted = allSortedSpools.value[material] || []
+      // Convert to array of objects with typeId and typeData
+      return sorted.map(([typeId, typeData]) => ({
+        typeId,
+        typeData
+      }))
     }
 
     const materialTotalWeight = (material) => {
@@ -217,7 +296,11 @@ export default {
     return {
       spoolStore,
       expandedTypes,
+      sortBy,
       spoolsByFilamentTypeInMaterial,
+      sortedSpoolsByFilamentTypeInMaterial,
+      getSortedSpoolsArray,
+      allSortedSpools,
       materialTotalWeight,
       toggleExpand,
       expandFilamentType,
@@ -250,6 +333,60 @@ export default {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.02em;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.sort-control label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.sort-control label .material-symbols-outlined {
+  font-size: 1.125rem;
+  color: var(--accent-primary);
+}
+
+.sort-select {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.sort-select:hover {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.sort-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
 .stats-grid {
@@ -788,6 +925,20 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .header-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sort-control {
+    width: 100%;
+  }
+
+  .sort-select {
+    flex: 1;
   }
 
   .material-header {
