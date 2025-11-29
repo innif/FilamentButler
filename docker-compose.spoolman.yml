@@ -1,0 +1,24 @@
+version: '3.8'
+
+# Simplified Docker Compose for FilamentButler with Spoolman Integration
+# This configuration only runs the frontend and connects to your existing Spoolman instance
+
+services:
+  # FilamentButler Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: filament-butler-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      # Set your Spoolman URL here
+      - VITE_SPOOLMAN_URL=${SPOOLMAN_URL:-https://spoolman.finn-harms.de}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+# No backend or database needed - everything is handled by Spoolman!

@@ -1,0 +1,22 @@
+{
+  "name": "filamentbutler-migration",
+  "version": "1.0.0",
+  "description": "Migration tool from FilamentButler legacy backend to Spoolman",
+  "main": "migrate-to-spoolman.js",
+  "scripts": {
+    "migrate": "node migrate-to-spoolman.js",
+    "migrate:dry-run": "node migrate-to-spoolman.js --dry-run",
+    "migrate:help": "node migrate-to-spoolman.js --help"
+  },
+  "keywords": [
+    "filamentbutler",
+    "spoolman",
+    "migration",
+    "3d-printing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

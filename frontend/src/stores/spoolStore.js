@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
-
-const API_URL = '/api/spools'
+import spoolmanClient from '@/services/spoolmanClient'
+import {
+  transformSpools,
+  transformSpoolToSpool,
+  transformSpoolToSpoolman
+} from '@/services/spoolmanAdapter'
 
 export const useSpoolStore = defineStore('spool', {
   state: () => ({
@@ -83,10 +86,10 @@ export const useSpoolStore = defineStore('spool', {
       try {
         const params = {}
         if (filamentTypeId) {
-          params.filamentTypeId = filamentTypeId
+          params['filament.id'] = filamentTypeId
         }
-        const response = await axios.get(API_URL, { params })
-        this.spools = response.data
+        const spoolmanSpools = await spoolmanClient.getSpools(params)
+        this.spools = transformSpools(spoolmanSpools)
       } catch (error) {
         this.error = error.message
         console.error('Error fetching spools:', error)
@@ -99,8 +102,8 @@ export const useSpoolStore = defineStore('spool', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get(`${API_URL}/${id}`)
-        return response.data
+        const spoolmanSpool = await spoolmanClient.getSpool(id)
+        return transformSpoolToSpool(spoolmanSpool)
       } catch (error) {
         this.error = error.message
         console.error('Error fetching spool:', error)
@@ -114,9 +117,11 @@ export const useSpoolStore = defineStore('spool', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.post(API_URL, spoolData)
-        this.spools.push(response.data)
-        return response.data
+        const spoolmanData = transformSpoolToSpoolman(spoolData)
+        const createdSpool = await spoolmanClient.createSpool(spoolmanData)
+        const transformedSpool = transformSpoolToSpool(createdSpool)
+        this.spools.push(transformedSpool)
+        return transformedSpool
       } catch (error) {
         this.error = error.message
         console.error('Error creating spool:', error)
@@ -130,12 +135,14 @@ export const useSpoolStore = defineStore('spool', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.put(`${API_URL}/${id}`, spoolData)
+        const spoolmanData = transformSpoolToSpoolman(spoolData)
+        const updatedSpool = await spoolmanClient.updateSpool(id, spoolmanData)
+        const transformedSpool = transformSpoolToSpool(updatedSpool)
         const index = this.spools.findIndex(s => s.id === id)
         if (index !== -1) {
-          this.spools[index] = response.data
+          this.spools[index] = transformedSpool
         }
-        return response.data
+        return transformedSpool
       } catch (error) {
         this.error = error.message
         console.error('Error updating spool:', error)
@@ -149,7 +156,7 @@ export const useSpoolStore = defineStore('spool', {
       this.loading = true
       this.error = null
       try {
-        await axios.delete(`${API_URL}/${id}`)
+        await spoolmanClient.deleteSpool(id)
         this.spools = this.spools.filter(s => s.id !== id)
       } catch (error) {
         this.error = error.message

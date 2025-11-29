@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+  # Legacy backend - only needed for data migration
+  # You can remove this service after migrating your data to Spoolman
   backend:
     build: ./backend
     container_name: filament-butler-backend
@@ -15,7 +17,10 @@ services:
       - ./backend:/app
       - /app/node_modules
     restart: unless-stopped
+    profiles:
+      - legacy  # Only start with: docker-compose --profile legacy up
 
+  # FilamentButler Frontend with Spoolman Integration
   frontend:
     build:
       context: ./frontend
@@ -25,13 +30,14 @@ services:
       - "5173:5173"
     environment:
       - NODE_ENV=development
+      - VITE_SPOOLMAN_URL=https://spoolman.finn-harms.de
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    depends_on:
-      - backend
     restart: unless-stopped
 
+  # Legacy database - only needed for data migration
+  # You can remove this service after migrating your data to Spoolman
   db:
     image: postgres:15-alpine
     container_name: filament-butler-db
@@ -44,6 +50,8 @@ services:
     ports:
       - "5434:5432"
     restart: unless-stopped
+    profiles:
+      - legacy  # Only start with: docker-compose --profile legacy up
 
 volumes:
   postgres_data:

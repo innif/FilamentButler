@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
-
-const API_URL = '/api/filament-types'
+import spoolmanClient from '@/services/spoolmanClient'
+import {
+  transformFilaments,
+  transformFilamentToFilamentType,
+  transformFilamentTypeToFilament,
+  getOrCreateVendor
+} from '@/services/spoolmanAdapter'
 
 export const useFilamentTypeStore = defineStore('filamentType', {
   state: () => ({
@@ -45,8 +49,8 @@ export const useFilamentTypeStore = defineStore('filamentType', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get(API_URL)
-        this.filamentTypes = response.data
+        const spoolmanFilaments = await spoolmanClient.getFilaments()
+        this.filamentTypes = transformFilaments(spoolmanFilaments)
       } catch (error) {
         this.error = error.message
         console.error('Error fetching filament types:', error)
@@ -59,8 +63,8 @@ export const useFilamentTypeStore = defineStore('filamentType', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get(`${API_URL}/${id}`)
-        return response.data
+        const spoolmanFilament = await spoolmanClient.getFilament(id)
+        return transformFilamentToFilamentType(spoolmanFilament)
       } catch (error) {
         this.error = error.message
         console.error('Error fetching filament type:', error)
@@ -74,9 +78,20 @@ export const useFilamentTypeStore = defineStore('filamentType', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.post(API_URL, typeData)
-        this.filamentTypes.push(response.data)
-        return response.data
+        // Get or create vendor
+        const vendorId = await getOrCreateVendor(typeData.manufacturer, spoolmanClient)
+
+        // Add vendor_id to typeData
+        const typeDataWithVendor = {
+          ...typeData,
+          _vendorId: vendorId
+        }
+
+        const spoolmanData = transformFilamentTypeToFilament(typeDataWithVendor)
+        const createdFilament = await spoolmanClient.createFilament(spoolmanData)
+        const transformedType = transformFilamentToFilamentType(createdFilament)
+        this.filamentTypes.push(transformedType)
+        return transformedType
       } catch (error) {
         this.error = error.message
         console.error('Error creating filament type:', error)
@@ -90,12 +105,23 @@ export const useFilamentTypeStore = defineStore('filamentType', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.put(`${API_URL}/${id}`, typeData)
+        // Get or create vendor if manufacturer changed
+        const vendorId = await getOrCreateVendor(typeData.manufacturer, spoolmanClient)
+
+        // Add vendor_id to typeData
+        const typeDataWithVendor = {
+          ...typeData,
+          _vendorId: vendorId
+        }
+
+        const spoolmanData = transformFilamentTypeToFilament(typeDataWithVendor)
+        const updatedFilament = await spoolmanClient.updateFilament(id, spoolmanData)
+        const transformedType = transformFilamentToFilamentType(updatedFilament)
         const index = this.filamentTypes.findIndex(t => t.id === id)
         if (index !== -1) {
-          this.filamentTypes[index] = response.data
+          this.filamentTypes[index] = transformedType
         }
-        return response.data
+        return transformedType
       } catch (error) {
         this.error = error.message
         console.error('Error updating filament type:', error)
@@ -109,7 +135,7 @@ export const useFilamentTypeStore = defineStore('filamentType', {
       this.loading = true
       this.error = null
       try {
-        await axios.delete(`${API_URL}/${id}`)
+        await spoolmanClient.deleteFilament(id)
         this.filamentTypes = this.filamentTypes.filter(t => t.id !== id)
       } catch (error) {
         this.error = error.message
